@@ -981,10 +981,13 @@ class CNV_OT_import_cm3d2_model(bpy.types.Operator, bpy_extras.io_utils.ImportHe
         # UV作成
         bm = bmesh.new()
         bm.from_mesh(me)
-        bm.loops.layers.uv.new(f_data_("MainUV"))
+        bm.loops.layers.uv.new(f_data_("UV"))
         for i, used in enumerate(extra_uv_uses):    
-            if used:
-                bm.loops.layers.uv.new(f_data_("ExtraUV{num}", num=i))
+            if used: 
+                if i<=2:
+                    bm.loops.layers.uv.new(f_data_("UV{num}", num=i+2))
+                else:
+                    bm.loops.layers.uv.new(f_data_("Unknown{num}", num=i-2))
         for face in bm.faces:
             for loop in face.loops:
                 loop[bm.loops.layers.uv[0]].uv = vertex_data[loop.vert.index]['uv']

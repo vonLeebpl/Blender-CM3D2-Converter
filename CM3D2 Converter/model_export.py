@@ -35,6 +35,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
             ('1000', '1000', 'model version 1000 (available for cm3d2/com3d2)', 'NONE', 1000),
             ('2000', '2000', 'model version 2000 (com3d2 version)', 'NONE', 2000),
             ('2001', '2001', 'model version 2001 (available only for com3d2)', 'NONE', 2001),
+            ('2102', '2102', 'model version 2102 (available only for com3d2.5)', 'NONE', 2102),
         ], default='AUTO')
     model_name = bpy.props.StringProperty(name="model名", default="*")
     base_bone_name = bpy.props.StringProperty(name="基点ボーン名", default="*")
@@ -180,7 +181,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
         
         box = self.layout.box()
         col = box.column(align=True)
-        col.label(text="ボーン情報元", icon='BONE_DATA')
+        col.label(text="Bones source", icon='BONE_DATA')
         col.prop(self, 'bone_info_mode', icon='BONE_DATA', expand=True)
         col = box.column(align=True)
         col.label(text="マテリアル情報元", icon='MATERIAL')
@@ -499,7 +500,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
         is_deleted = 0
         deleted_names = "The game will delete these local bones"
         for index, is_used in used_local_bone.items():
-            print(index, is_used)
+            # print(index, is_used)
             if is_used == False:
                 is_deleted += 1
                 deleted_names = deleted_names + '\n' + local_bone_data[index]['name']
@@ -574,7 +575,19 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
         # 正しい頂点数などを取得
         bm = bmesh.new()
         bm.from_mesh(me)
-        uv_lay = bm.loops.layers.uv.active
+        # uv_lay = bm.loops.layers.uv.active
+        uv_lay = bm.loops.layers.uv[0]
+
+        # vonLeeb : extra uv layers
+        uv_extra_layers = []
+        if self.version_num >= 2102:
+            for i in range(1, len(bm.loops.layers.uv)):     # this strange as bm.loops.layers.uv is not a collection
+                uv_ex_lay = bm.loops.layers.uv[i]
+                if uv_ex_lay != uv_lay:
+                    uv_extra_layers.append(uv_ex_lay)
+
+        vert_extra_uvs = {}
+
         vert_uvs = []
         vert_uvs_append = vert_uvs.append
         vert_iuv = {}
@@ -590,8 +603,17 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
                     vert_iuv[hash((vert.index, uv.x, uv.y))] = vert_count
                     vert_indices[vert.index] = vert_count
                     vert_count += 1
+            if self.version_num >= 2102:
+                uv_extra_data = []
+                vert_extra_uvs[vert.index]=uv_extra_data
+                for loop in vert.link_loops:
+                    for uv_ex_lay in uv_extra_layers:
+                        uv = loop[uv_ex_lay].uv
+                        uv_extra_data.append(uv)
+                    break
+                
         if 65535 < vert_count:
-            raise common.CM3D2ExportError(f_tip_("頂点数がまだ多いです (現在{}頂点)。あと{}頂点以上減らしてください、中止します", vert_count, vert_count - 65535))
+            raise common.CM3D2ExportError(f_tip_("There are still too many vertices (currently {} vertices). Please reduce the number of vertices by at least {} or more.", vert_count, vert_count - 65535))
         context.window_manager.progress_update(5)
 
         writer.write(struct.pack('<2i', vert_count, len(ob.material_slots)))
@@ -620,6 +642,15 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
         cm_verts = []
         cm_norms = []
         cm_uvs = []
+
+        # vonLeeb: manage 2102 body extra uvs
+        extra_uv_uses = [False] * 7
+        if self.version_num >= 2102:
+            for i in range(1, len(bm.loops.layers.uv)):
+                extra_uv_uses[i-1] = True
+            writer.write(struct.pack('<7?', *extra_uv_uses))
+            print(f_("extra_uv_uses = {boollist}", boollist=extra_uv_uses))
+
         # 頂点情報を書き出し
         for i, vert in enumerate(bm.verts):
             co = compat.convert_bl_to_cm_space( vert.co * self.scale )
@@ -635,6 +666,11 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
                 writer.write(struct.pack('<3f', co.x, co.y, co.z))
                 writer.write(struct.pack('<3f', no.x, no.y, no.z))
                 writer.write(struct.pack('<2f', uv.x, uv.y))
+                # vonLeeb : quick fix for 2102
+                if self.version_num >= 2102:
+                    for ex_uv in vert_extra_uvs[vert.index]:
+                        writer.write(struct.pack('<2f', ex_uv.x, ex_uv.y))
+
         context.window_manager.progress_update(6)
 
         cm_tris = self.parse_triangles(bm, ob, uv_lay, vert_iuv, vert_indices)
