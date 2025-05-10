@@ -303,6 +303,7 @@ class CNV_OT_import_cm3d2_model(bpy.types.Operator, bpy_extras.io_utils.ImportHe
 
                 # その他情報読み込み
                 misc_data = []
+                skin_thick_data = {}
                 while True:
                     #print(f_("Reading data_type at 0x{num:02X}", num=reader.tell()))
                     data_type = common.read_str(reader)
@@ -327,6 +328,50 @@ class CNV_OT_import_cm3d2_model(bpy.types.Operator, bpy_extras.io_utils.ImportHe
                             data_list.append({'index': index, 'co': co, 'normal': normal, 'color': extra_uvs})
                     else:
                         break
+                
+                has_skin_thickness = 0
+                if model_ver >= 2100:
+                    has_skin_thickness = struct.unpack('<i', reader.read(4))[0]
+                    if has_skin_thickness > 0:
+                        misc_item = {}
+                        skin_thick_data = misc_item
+
+                        # read header
+                        misc_item['signature'] = common.read_str(reader)
+                        misc_item['version'] = struct.unpack('<i', reader.read(4))[0]
+                        misc_item['use'] = struct.unpack('<?', reader.read(1))[0]
+                        groups_count = struct.unpack('<i', reader.read(4))[0]
+                        misc_item['groups_count'] = groups_count
+
+                        #read groups
+                        st_groups = {}
+                        misc_item['groups'] = st_groups
+                        for i in range(groups_count):
+                            st_group = {}
+                            group_key = common.read_str(reader)
+                            st_groups[group_key] = st_group
+                            st_group['group_name'] = common.read_str(reader)
+                            st_group['start_bone_name'] = common.read_str(reader)
+                            st_group['end_bone_name'] = common.read_str(reader)
+                            st_group['step_angle_degree'] = struct.unpack('<i', reader.read(4))[0]
+                            point_count = struct.unpack('<i', reader.read(4))[0]
+                            points = []
+                            st_group['points'] = points
+                            for j in range(point_count):
+                                point = {}
+                                points.append(point)
+                                point['target_bone_name'] = common.read_str(reader)
+                                point['ratio_segment_start_to_end'] = struct.unpack('<f', reader.read(4))[0]
+                                angle_defs_count = struct.unpack('<i', reader.read(4))[0]
+                                distance_per_angle = []
+                                point['distance_per_angle'] = distance_per_angle
+                                for k in range(angle_defs_count):
+                                    angle = {}
+                                    distance_per_angle.append(angle)
+                                    angle['angle_degree'] = struct.unpack('<i', reader.read(4))[0]
+                                    angle['vertex_index'] = struct.unpack('<i', reader.read(4))[0]
+                                    angle['default_distance'] = struct.unpack('<f', reader.read(4))[0]
+                        # print('debug_stop')
             
             except UnicodeDecodeError as e:
                 msg = [
@@ -893,7 +938,48 @@ class CNV_OT_import_cm3d2_model(bpy.types.Operator, bpy_extras.io_utils.ImportHe
             self.report(type={'WARNING'}, message="Found bone with a scale not equal to 1.")
         if is_local_bones_corrupt:
             self.report(type={'ERROR'}, message="Found potentially corrupt local bone data, please re-import with \"Use Local Bone Data\" disabled.")
+        
+        # vonLeeb: skin thickness
+        if model_ver >= 2100:
+            arm_ob['has_skin_thickness'] = has_skin_thickness
+            if has_skin_thickness > 0:
+                self.store_skin_thickness(model_ver, arm, arm_ob, skin_thick_data)
+
         return {'FINISHED'}
+
+    def store_skin_thickness(self, model_ver, arm, arm_ob, st_data):
+        if model_ver >= 2100:   # store top data to armature object custom properties
+            arm_ob['st_use'] = st_data['use']
+            if st_data['use'] > 0:
+                arm_ob['st_signature'] = st_data['signature']
+                arm_ob['st_version'] = st_data['version']
+                arm_ob['st_groups_count'] = st_data['groups_count']
+                group_names = []
+                for group in st_data['groups']:
+                    group_names.append(group)
+                arm_ob['st_group_names'] = ','.join(str(x) for x in group_names)
+                
+                # store group data to respective bone custom properties
+                for key, group in st_data['groups'].items():
+                    bone = arm.bones.get(common.decode_bone_name(group['group_name'], self.is_convert_bone_weight_names))
+                    bone['st_group_name'] = common.decode_bone_name(group['group_name'], self.is_convert_bone_weight_names)
+                    bone['st_start_bone_name'] = common.decode_bone_name(group['start_bone_name'], self.is_convert_bone_weight_names)
+                    bone['st_end_bone_name'] = common.decode_bone_name(group['end_bone_name'], self.is_convert_bone_weight_names)
+                    bone['st_step_angle_degree'] = group['step_angle_degree']
+                    bone['st_points_count'] = len(group['points'])
+                    target_bone_names = []
+                    for point in group['points']:
+                        target_bone_names.append(common.decode_bone_name(point['target_bone_name'], self.is_convert_bone_weight_names))
+                    bone['st_target_bone_names'] = ','.join(x for x in target_bone_names)
+                    # store point data at target bone
+                    for point in group['points']:
+                        bone = arm.bones.get(common.decode_bone_name(point['target_bone_name'], self.is_convert_bone_weight_names))
+                        bone['st_ratio_segment_start_to_end'] = point['ratio_segment_start_to_end']
+                        bone['st_distance_per_angle_count'] = len(point['distance_per_angle'])
+                        for i, angle_degree in enumerate(point['distance_per_angle']):
+                            bone["st_distance_per_angle_"+str(i)] = " ".join(str(x) for x in list(angle_degree.values()))
+
+                    
 
     def create_mesh(self, context: bpy.types.Context, model_name1, vertex_data, face_data) -> tuple[bpy.types.Object, bpy.types.Mesh]:
         # メッシュ作成

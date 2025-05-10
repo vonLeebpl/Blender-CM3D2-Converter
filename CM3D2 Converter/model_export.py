@@ -16,8 +16,8 @@ from .translations.pgettext_functions import *
 @compat.BlRegister()
 class CNV_OT_export_cm3d2_model(bpy.types.Operator):
     bl_idname = 'export_mesh.export_cm3d2_model'
-    bl_label = "CM3D2モデル (.model)"
-    bl_description = "カスタムメイド3D2のmodelファイルを書き出します"
+    bl_label = "CM3D2 Models (.model)"
+    bl_description = "Export the Custom (Order) Maid 3D2 model file."
     bl_options = {'REGISTER'}
 
     filepath = bpy.props.StringProperty(subtype='FILE_PATH')
@@ -57,7 +57,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
     is_arrange_name = bpy.props.BoolProperty(name="データ名の連番を削除", default=True, description="「○○.001」のような連番が付属したデータ名からこれらを削除します")
 
     is_align_to_base_bone = bpy.props.BoolProperty(name="Align to Base Bone", default=True, description="Align the object to it's base bone")
-    is_convert_tris = bpy.props.BoolProperty(name="四角面を三角面に", default=True, description="四角ポリゴンを三角ポリゴンに変換してから出力します、元のメッシュには影響ありません")
+    is_convert_tris = bpy.props.BoolProperty(name="Quad. faces to triang.", default=True, description="Converts quadrilateral polygons to triangular polygons before outputting.メッシュには影響ありません")
     is_split_sharp = bpy.props.BoolProperty(name="Split Sharp Edges", default=True, description="Split all edges marked as sharp.")
     is_normalize_weight = bpy.props.BoolProperty(name="ウェイトの合計を1.0に", default=True, description="4つのウェイトの合計値が1.0になるように正規化します")
     is_convert_bone_weight_names = bpy.props.BoolProperty(name="頂点グループ名をCM3D2用に変換", default=True, description="全ての頂点グループ名をCM3D2で使える名前にしてからエクスポートします")
@@ -83,12 +83,12 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
         return False
 
     def report_cancel(self, report_message, report_type={'ERROR'}, resobj={'CANCELLED'}):
-        """エラーメッセージを出力してキャンセルオブジェクトを返す"""
+        """Prints an error message and returns a Cancel object"""
         self.report(type=report_type, message=report_message)
         return resobj
 
     def precheck(self, context):
-        """データの成否チェック"""
+        """Check whether the data is correct"""
         ob = context.active_object
         if not ob:
             return self.report_cancel("アクティブオブジェクトがありません")
@@ -184,11 +184,11 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
         col.label(text="Bones source", icon='BONE_DATA')
         col.prop(self, 'bone_info_mode', icon='BONE_DATA', expand=True)
         col = box.column(align=True)
-        col.label(text="マテリアル情報元", icon='MATERIAL')
+        col.label(text="Material info source", icon='MATERIAL')
         col.prop(self, 'mate_info_mode', icon='MATERIAL', expand=True)
         
         box = self.layout.box()
-        box.label(text="メッシュオプション")
+        box.label(text="mesh options")
         box.prop(self , 'is_align_to_base_bone', icon=compat.icon('OBJECT_ORIGIN'  ))
         box.prop(self , 'is_convert_tris'      , icon=compat.icon('MESH_DATA'      ))
         box.prop(self , 'is_split_sharp'       , icon=compat.icon('MOD_EDGESPLIT'  ))
@@ -252,8 +252,8 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
                     bpy.ops.object.forced_modifier_apply(is_applies=[True for i in range(32)])
             else:
                 selected_count = 0
-                # 選択されたMESHオブジェクトをコピーしてjoin
-                # 必要に応じて、モディファイアの強制適用を行う
+                # Copy and join selected MESH objects
+                # If necessary, force apply modifiers.う
                 for selected in selected_objs:
                     source_objs.append(selected)
 
@@ -283,7 +283,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
             self.report(type={'INFO'}, message=f_tip_("modelのエクスポートが完了しました。{:.2f} 秒 file={}", diff_time, self.filepath))
             return ret
         finally:
-            # 作業データの破棄（コピーデータを削除、選択状態の復元、アクティブオブジェクト、モードの復元）
+            # Discard work (delete copied data, restore selection, active objects, modes)
             if ob_main:
                 common.remove_data(ob_main)
                 # me_copied = ob_main.data
@@ -300,7 +300,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
                 bpy.ops.object.mode_set(mode=prev_mode)
 
     def export(self, context, ob):
-        """モデルファイルを出力"""
+        """Output model file"""
         prefs = common.preferences()
 
         if not self.is_batch:
@@ -323,27 +323,27 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
         if self.bone_info_mode == 'ARMATURE':
             arm_ob = ob.parent
             if arm_ob and arm_ob.type != 'ARMATURE':
-                return self.report_cancel("メッシュオブジェクトの親がアーマチュアではありません")
+                return self.report_cancel("Mesh object's parent is not an armature")
             if not arm_ob:
                 try:
                     arm_ob = next(mod for mod in ob.modifiers if mod.type == 'ARMATURE' and mod.object)
                 except StopIteration:
-                    return self.report_cancel("アーマチュアが見つかりません、親にするかモディファイアにして下さい")
+                    return self.report_cancel("Armature not found, make it a parent or modifier")
                 arm_ob = arm_ob.object
         elif self.bone_info_mode == 'TEXT':
             if "BoneData" not in context.blend_data.texts:
-                return self.report_cancel("テキスト「BoneData」が見つかりません、中止します")
+                return self.report_cancel("Text 'BoneData' not found, aborting")
             if "LocalBoneData" not in context.blend_data.texts:
-                return self.report_cancel("テキスト「LocalBoneData」が見つかりません、中止します")
+                return self.report_cancel("Text 'LocalBoneData' not found, aborting")
         elif self.bone_info_mode == 'OBJECT_PROPERTY':
             if "BoneData:0" not in ob:
-                return self.report_cancel("オブジェクトのカスタムプロパティにボーン情報がありません")
+                return self.report_cancel("Object has no bone information in its custom properties")
             if "LocalBoneData:0" not in ob:
-                return self.report_cancel("オブジェクトのカスタムプロパティにボーン情報がありません")
+                return self.report_cancel("Object has no bone information in its custom properties")
         elif self.bone_info_mode == 'ARMATURE_PROPERTY':
             arm_ob = ob.parent
             if arm_ob and arm_ob.type != 'ARMATURE':
-                return self.report_cancel("メッシュオブジェクトの親がアーマチュアではありません")
+                return self.report_cancel("Mesh object's parent is not an armature")
             if not arm_ob:
                 try:
                     arm_ob = next(mod for mod in ob.modifiers if mod.type == 'ARMATURE' and mod.object)
@@ -360,7 +360,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
         if self.mate_info_mode == 'TEXT':
             for index, slot in enumerate(ob.material_slots):
                 if "Material:" + str(index) not in context.blend_data.texts:
-                    return self.report_cancel("マテリアル情報元のテキストが足りません")
+                    return self.report_cancel("Material information source text is insufficient")
         context.window_manager.progress_update(1)
 
         # model名とか
@@ -370,7 +370,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
         if self.base_bone_name == '*':
             self.base_bone_name = ob_names[1] if 2 <= len(ob_names) else 'Auto'
 
-        # BoneData情報読み込み
+        # Read BoneData information
         base_bone_candidate = None
         bone_data = []
         if self.bone_info_mode == 'ARMATURE':
@@ -406,7 +406,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
             bpy.ops.mesh.split_sharp()
             bpy.ops.object.mode_set(mode='OBJECT')
 
-        # LocalBoneData情報読み込み
+        # Read LocalBoneData information
         local_bone_data = []
         if self.bone_info_mode == 'ARMATURE':
             local_bone_data = self.armature_local_bone_data_parser(arm_ob)
@@ -417,13 +417,13 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
             target = ob if self.bone_info_mode == 'OBJECT_PROPERTY' else arm_ob.data
             local_bone_data = self.local_bone_data_parser(self.indexed_data_generator(target, prefix="LocalBoneData:"))
         if len(local_bone_data) <= 0:
-            return self.report_cancel("テキスト「LocalBoneData」に有効なデータがありません")
+            return self.report_cancel("Text 'LocalBoneData' does not contain valid data")
         local_bone_name_indices = {bone['name']: index for index, bone in enumerate(local_bone_data)}
         context.window_manager.progress_update(3)
         
         used_local_bone = {index: False for index, bone in enumerate(local_bone_data)}
         
-        # ウェイト情報読み込み
+        # Loading weight information
         vertices = []
         is_over_one = 0
         is_under_one = 0
@@ -450,7 +450,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
             if len(vgs) == 0:
                 if not self.is_batch:
                     self.select_no_weight_vertices(context, local_bone_name_indices)
-                return self.report_cancel("ウェイトが割り当てられていない頂点が見つかりました、中止します")
+                return self.report_cancel("Vertex found with no weights assigned, aborting")
             if len(vgs) > 4:
                 is_in_too_many += 1
             vgs = sorted(vgs, key=itemgetter(1), reverse=True)[0:4]
@@ -488,13 +488,13 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
             })
         
         if 1 <= is_over_one:
-            self.report(type={'WARNING'}, message=f_tip_("ウェイトの合計が1.0を超えている頂点が見つかりました。正規化してください。超過している頂点の数:{}", is_over_one))
+            self.report(type={'WARNING'}, message=f_tip_("Found vertices whose weight sum exceeds 1.0. Please normalize them. Number of vertices in excess: {}", is_over_one))
         if 1 <= is_under_one:
-            self.report(type={'WARNING'}, message=f_tip_("ウェイトの合計が1.0未満の頂点が見つかりました。正規化してください。不足している頂点の数:{}", is_under_one))
+            self.report(type={'WARNING'}, message=f_tip_("Found vertices with sum of weights less than 1.0. Please normalize. Number of missing vertices: {}", is_under_one))
         
         # luvoid : warn that there are vertices in too many vertex groups
         if is_in_too_many > 0:
-            self.report(type={'WARNING'}, message=f_tip_("4つを超える頂点グループにある頂点が見つかりました。頂点グループをクリーンアップしてください。不足している頂点の数:{}", is_in_too_many))
+            self.report(type={'WARNING'}, message=f_tip_("Found vertex in more than 4 vertex groups. Please clean up vertex groups. Number of missing vertices: {}", is_in_too_many))
                 
         # luvoid : check for unused local bones that the game will delete
         is_deleted = 0
@@ -510,7 +510,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
                 print(f_tip_("Unexpected: used_local_bone[{key}] == {value} when len(used_local_bone) == {length}", key=index, value=is_used, length=len(used_local_bone)))
                 self.report(type={'WARNING'}, message=f_tip_("Could not find whether bone with index {index} was used. See console for more info.", index=i))
         if is_deleted > 0:
-            self.report(type={'WARNING'}, message=f_tip_("頂点が割り当てられていない{num}つのローカルボーンが見つかりました。 詳細については、ログを参照してください。", num=is_deleted))
+            self.report(type={'WARNING'}, message=f_tip_("Found {num} local bones with no vertices assigned, see log for details.", num=is_deleted))
             self.report(type={'INFO'}, message=deleted_names)
                 
         context.window_manager.progress_update(4)
@@ -529,15 +529,15 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
         }
         try:
             with writer:
-                self.write_model(context, ob, writer, **model_datas)
+                self.write_model(context, ob, writer, arm_ob, **model_datas)
         except common.CM3D2ExportError as e:
             self.report(type={'ERROR'}, message=str(e))
             return {'CANCELLED'}
 
         return {'FINISHED'}
 
-    def write_model(self, context, ob: bpy.types.Object, writer, bone_data=[], local_bone_data=[], vertices=[]):
-        """モデルデータをファイルオブジェクトに書き込む"""
+    def write_model(self, context, ob: bpy.types.Object, writer, arm_ob, bone_data=[], local_bone_data=[], vertices=[]):
+        """Write model data to a file object"""
         me = ob.data
         prefs = common.preferences()
 
@@ -618,7 +618,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
 
         writer.write(struct.pack('<2i', vert_count, len(ob.material_slots)))
 
-        # ローカルボーン情報を書き出し
+        # Export Local Bone Info
         writer.write(struct.pack('<i', len(local_bone_data)))
         for bone in local_bone_data:
             common.write_str(writer, bone['name'])
@@ -628,7 +628,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
                 writer.write(struct.pack('<f', f))
         context.window_manager.progress_update(5.7)
 
-        # カスタム法線情報を取得
+        # Get Custom Normal Information
         if me.has_custom_normals:
             custom_normals = [mathutils.Vector() for i in range(len(me.vertices))]
             me.calc_normals_split()
@@ -651,7 +651,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
             writer.write(struct.pack('<7?', *extra_uv_uses))
             print(f_("extra_uv_uses = {boollist}", boollist=extra_uv_uses))
 
-        # 頂点情報を書き出し
+        # Export Vertex Information
         for i, vert in enumerate(bm.verts):
             co = compat.convert_bl_to_cm_space( vert.co * self.scale )
             if me.has_custom_normals:
@@ -675,7 +675,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
 
         cm_tris = self.parse_triangles(bm, ob, uv_lay, vert_iuv, vert_indices)
 
-        # 接空間情報を書き出し
+        # Export Tangent Space Information
         if self.export_tangent:
             tangents = self.calc_tangents(cm_tris, cm_verts, cm_norms, cm_uvs)
             writer.write(struct.pack('<i', len(tangents)))
@@ -684,21 +684,21 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
         else:
             writer.write(struct.pack('<i', 0))
 
-        # ウェイト情報を書き出し
+        # Export Weight Information
         for vert in vertices:
             for uv in vert_uvs[vert['index']]:
                 writer.write(struct.pack('<4H', *vert['face_indexs']))
                 writer.write(struct.pack('<4f', *vert['weights']))
         context.window_manager.progress_update(7)
 
-        # 面情報を書き出し
+        # Export Face Information
         for tri in cm_tris:
             writer.write(struct.pack('<i', len(tri)))
             for vert_index in tri:
                 writer.write(struct.pack('<H', vert_index))
         context.window_manager.progress_update(8)
 
-        # マテリアルを書き出し
+        # Export material
         writer.write(struct.pack('<i', len(ob.material_slots)))
         for slot_index, slot in enumerate(ob.material_slots):
             if self.mate_info_mode == 'MATERIAL':
@@ -712,13 +712,52 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
 
         context.window_manager.progress_update(9)
 
-        # モーフを書き出し
+        # Export Morph
         if me.shape_keys and len(me.shape_keys.key_blocks) >= 2:
             try:
                 self.write_shapekeys(context, ob, writer, vert_uvs, custom_normals)
             finally:
                 print("FINISHED SHAPE KEYS WRITE")
                 pass
+        else:
+            common.write_str(writer, 'end')
+
+        # export skin thickness
+        if self.version_num >= 2100:
+            has_st = arm_ob['has_skin_thickness']
+            writer.write(struct.pack('<i', has_st))
+            if has_st > 0:
+                # header
+                common.write_str(writer, arm_ob['st_signature'])
+                writer.write(struct.pack('<i', arm_ob['st_version']))
+                writer.write(struct.pack('<?', bool(arm_ob['st_use'])))
+                writer.write(struct.pack('<i', arm_ob['st_groups_count']))
+
+                # groups
+                group_names = arm_ob['st_group_names'].split(',')
+                for group_name in group_names:
+                    common.write_str(writer, group_name) # key that seems to be a bone name
+                    common.write_str(writer, group_name)
+                    bone = arm_ob.data.bones[group_name]
+                    common.write_str(writer, bone['st_start_bone_name'])
+                    common.write_str(writer, bone['st_end_bone_name'])
+                    writer.write(struct.pack('<i', bone['st_step_angle_degree']))
+                    writer.write(struct.pack('<i', bone['st_points_count']))
+
+                    # points
+                    target_bone_names = bone['st_target_bone_names'].split(',')
+                    for target_bone_name in target_bone_names:
+                        target_bone = arm_ob.data.bones[target_bone_name]
+                        common.write_str(writer, target_bone.name)
+                        writer.write(struct.pack('<f', target_bone['st_ratio_segment_start_to_end']))
+                        writer.write(struct.pack('<i', target_bone['st_distance_per_angle_count']))
+                        for dist in range(target_bone['st_distance_per_angle_count']):
+                            d = target_bone['st_distance_per_angle_'+str(dist)].split(' ')
+                            writer.write(struct.pack('<2i', int(d[0]), int(d[1])))
+                            writer.write(struct.pack('<f', float(d[2])))
+
+
+
         common.write_str(writer, 'end')
 
     def write_shapekeys(self, context, ob, writer, vert_uvs, custom_normals=None):
@@ -1039,7 +1078,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='EDIT')
 
     def armature_bone_data_parser(self, context, ob):
-        """アーマチュアを解析してBoneDataを返す"""
+        """Parse the armature and return BoneData"""
         arm = ob.data
         
         pre_active = compat.get_active(context)
@@ -1139,7 +1178,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
 
     @staticmethod
     def bone_data_parser(container):
-        """BoneData テキストをパースして辞書を要素とするリストを返す"""
+        """BoneData Parses text and returns a list of dictionaries."""
         bone_data = []
         bone_name_indices = {}
         for line in container:
@@ -1170,7 +1209,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
         return bone_data
 
     def armature_local_bone_data_parser(self, ob):
-        """アーマチュアを解析してBoneDataを返す"""
+        """Parse the armature and return BoneData"""
         arm = ob.data
 
         # XXX Instead of just adding all bones, only bones / bones-with-decendants 
@@ -1241,7 +1280,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
 
     @staticmethod
     def local_bone_data_parser(container):
-        """LocalBoneData テキストをパースして辞書を要素とするリストを返す"""
+        """LocalBoneData Parses text and returns a list of dictionaries."""
         local_bone_data = []
         for line in container:
             data = line.split(',')
@@ -1255,7 +1294,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
 
     @staticmethod
     def indexed_data_generator(container, prefix='', max_index=9**9, max_pass=50):
-        """コンテナ内の数値インデックスをキーに持つ要素を昇順に返すジェネレーター"""
+        """A generator that returns the elements whose keys are their numeric indices in the container, in ascending order."""
         pass_count = 0
         for i in range(max_index):
             name = prefix + str(i)
