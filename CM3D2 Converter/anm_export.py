@@ -34,9 +34,9 @@ class CNV_OT_export_cm3d2_anm(bpy.types.Operator):
     filename_ext = '.anm'
     filter_glob = bpy.props.StringProperty(default='*.anm', options={'HIDDEN'})
 
-    scale = bpy.props.FloatProperty(name="倍率", default=0.2, min=0.1, max=100, soft_min=0.1, soft_max=100, step=100, precision=1, description="エクスポート時のメッシュ等の拡大率です")
-    is_backup = bpy.props.BoolProperty(name="ファイルをバックアップ", default=True, description="ファイルに上書きする場合にバックアップファイルを複製します")
-    version = bpy.props.IntProperty(name="ファイルバージョン", default=1000, min=1000, max=1111, soft_min=1000, soft_max=1111, step=1)
+    scale = bpy.props.FloatProperty(name="Scale", default=0.2, min=0.1, max=100, soft_min=0.1, soft_max=100, step=100, precision=1, description="This is the scale ratio of the mesh etc. at the time of export.")
+    is_backup = bpy.props.BoolProperty(name="Backup files", default=True, description="Make a backup file if you want to overwrite the file")
+    version = bpy.props.IntProperty(name="File version", default=2000, min=1000, max=2001, soft_min=1000, soft_max=2001, step=1)
     
     #is_anm_data_text = bpy.props.BoolProperty(name="From Anm Text", default=False, description="Input data from JSON file")
     items = [
@@ -47,29 +47,29 @@ class CNV_OT_export_cm3d2_anm(bpy.types.Operator):
     export_method = bpy.props.EnumProperty(items=items, name="Export Method", default='ALL')
 
 
-    frame_start = bpy.props.IntProperty(name="開始フレーム", default=0, min=0, max=99999, soft_min=0, soft_max=99999, step=1)
-    frame_end = bpy.props.IntProperty(name="最終フレーム", default=0, min=0, max=99999, soft_min=0, soft_max=99999, step=1)
-    key_frame_count = bpy.props.IntProperty(name="キーフレーム数", default=-1, min=-1, max=99999, soft_min=1, soft_max=99999, step=1)
-    time_scale = bpy.props.FloatProperty(name="再生速度", default=1.0, min=0.1, max=10.0, soft_min=0.1, soft_max=10.0, step=10, precision=1)
-    is_keyframe_clean = bpy.props.BoolProperty(name="同じ変形のキーフレームを掃除", default=True)
+    frame_start = bpy.props.IntProperty(name="Starting frame", default=0, min=0, max=99999, soft_min=0, soft_max=99999, step=1)
+    frame_end = bpy.props.IntProperty(name="Final frame", default=0, min=0, max=99999, soft_min=0, soft_max=99999, step=1)
+    key_frame_count = bpy.props.IntProperty(name="Number of keyframes", default=-1, min=-1, max=99999, soft_min=1, soft_max=99999, step=1)
+    time_scale = bpy.props.FloatProperty(name="Playback speed", default=1.0, min=0.1, max=10.0, soft_min=0.1, soft_max=10.0, step=10, precision=1)
+    is_keyframe_clean = bpy.props.BoolProperty(name="Clean up keyframes of the same transformation", default=True)
     is_visual_transform = bpy.props.BoolProperty(name="Use Visual Transforms", default=True )
-    is_smooth_handle = bpy.props.BoolProperty(name="キーフレーム間の変形をスムーズに", default=True)
+    is_smooth_handle = bpy.props.BoolProperty(name="Smooth transformations between keyframes", default=True)
 
     items = [
-        ('ARMATURE', "アーマチュア", "", 'OUTLINER_OB_ARMATURE', 1),
-        ('ARMATURE_PROPERTY', "アーマチュア内プロパティ", "", 'ARMATURE_DATA', 2),
+        ('ARMATURE', "Armature", "", 'OUTLINER_OB_ARMATURE', 1),
+        ('ARMATURE_PROPERTY', "Armature Property", "", 'ARMATURE_DATA', 2),
     ]
-    bone_parent_from = bpy.props.EnumProperty(items=items, name="ボーン親情報の参照先", default='ARMATURE_PROPERTY')
+    bone_parent_from = bpy.props.EnumProperty(items=items, name="Bone parent information reference", default='ARMATURE_PROPERTY')
     
     is_location = bpy.props.BoolProperty(name="Export Location"  , default=True )
     is_rotation = bpy.props.BoolProperty(name="Export Rotation"  , default=True )
     is_scale    = bpy.props.BoolProperty(name="Export Scale (Ex)", default=False)
 
-    is_remove_unkeyed_bone       = bpy.props.BoolProperty(name="Remove Unkeyed Bones", default=False)
-    is_remove_alone_bone         = bpy.props.BoolProperty(name="親も子も存在しない", default=True)
-    is_remove_ik_bone            = bpy.props.BoolProperty(name="名前がIK/Nubっぽい", default=True)
-    is_remove_serial_number_bone = bpy.props.BoolProperty(name="名前が連番付き", default=True)
-    is_remove_japanese_bone      = bpy.props.BoolProperty(name="名前に日本語が含まれる", default=True)
+    is_remove_unkeyed_bone       = bpy.props.BoolProperty(name="Unkeyed Bones", default=False)
+    is_remove_alone_bone         = bpy.props.BoolProperty(name="There are no parents or children", default=True)
+    is_remove_ik_bone            = bpy.props.BoolProperty(name="The name is like IK/Nub", default=True)
+    is_remove_serial_number_bone = bpy.props.BoolProperty(name="Names are numbered consecutively", default=True)
+    is_remove_japanese_bone      = bpy.props.BoolProperty(name="Name contains Japanese", default=True)
 
     @classmethod
     def poll(cls, context):
@@ -121,7 +121,7 @@ class CNV_OT_export_cm3d2_anm(bpy.types.Operator):
         box.enabled = not (self.export_method == 'TEXT')
         box.prop(self, 'time_scale')
         sub_box = box.box()
-        sub_box.enabled = (self.export_method == 'ALL')
+        sub_box.enabled = (self.export_method == 'KEYED')
         row = sub_box.row()
         row.prop(self, 'frame_start')
         row.prop(self, 'frame_end')
@@ -130,18 +130,18 @@ class CNV_OT_export_cm3d2_anm(bpy.types.Operator):
         sub_box.prop(self, 'is_smooth_handle', icon='SMOOTHCURVE')
 
         sub_box = box.box()
-        sub_box.label(text="ボーン親情報の参照先", icon='FILE_PARENT')
+        sub_box.label(text="Bone parent information reference", icon='FILE_PARENT')
         sub_box.prop(self, 'bone_parent_from', icon='FILE_PARENT', expand=True)
         
         sub_box = box.box()
-        sub_box.label(text="輸出アニメーション情報")
+        sub_box.label(text="Export animation information")
         column = sub_box.column(align=True)
         column.prop(self, 'is_location', icon=compat.icon('CON_LOCLIKE' ))
         column.prop(self, 'is_rotation', icon=compat.icon('CON_ROTLIKE' ))
         column.prop(self, 'is_scale'   , icon=compat.icon('CON_SIZELIKE'))
 
         sub_box = box.box()
-        sub_box.label(text="除外するボーン", icon='X')
+        sub_box.label(text="Bones to exclude", icon='X')
         column = sub_box.column(align=True)
         column.prop(self, 'is_remove_unkeyed_bone'      , icon='KEY_DEHLT'              )
         column.prop(self, 'is_remove_alone_bone'        , icon='UNLINKED'               )
@@ -172,7 +172,7 @@ class CNV_OT_export_cm3d2_anm(bpy.types.Operator):
         return self.is_scale
     
     def execute(self, context):
-        
+         
         # Don't allow exporting extended animation as '.anm' instead of '.ex.anm'
         if self.is_ex_anm and self.filepath.endswith('.anm') and not self.filepath.endswith('.ex.anm'):
             self.report(
@@ -199,6 +199,7 @@ class CNV_OT_export_cm3d2_anm(bpy.types.Operator):
                 else:
                     builder = self.get_anm_builder()
                     anm = builder.build_anm(context)
+                    anm.version = self.version
                     serialize_to_file(anm, file)
         except common.CM3D2ExportError as e:
             self.report(type={'ERROR'}, message=str(e))
@@ -480,8 +481,8 @@ class AnmBuilder:
         self.reporter = reporter
         
         self.scale = 0.2
-        self.version = 1000
-        self.export_method = 'ALL'
+        self.version = 2000
+        self.export_method = 'KEYED'
         self.frame_start = 0
         self.frame_end = 0
         self.key_frame_count = -1
@@ -797,9 +798,15 @@ class AnmBuilder:
                                            path=rna_data_path, index=axis_index)
                         )
                     else:
+                        
                         override = context.copy()
                         override['active_editable_fcurve'] = fcurve
-                        bpy.ops.fcurve.convert_to_cm3d2_interpolation(override, only_selected=False, keep_reports=True)
+                        if bpy.app.version[0] < 4:
+                            bpy.ops.fcurve.convert_to_cm3d2_interpolation(override, only_selected=False, keep_reports=True)
+                        else:
+                            with context.temp_override(**override):
+                                # bpy.ops.fcurve.convert_to_cm3d2_interpolation(override, only_selected=False, keep_reports=True)
+                                bpy.ops.fcurve.convert_to_cm3d2_interpolation(only_selected=False, keep_reports=True)
                         for kwargs in misc_DOPESHEET_MT_editor_menus.REPORTS:
                             self.report(**kwargs)
                         misc_DOPESHEET_MT_editor_menus.REPORTS.clear()

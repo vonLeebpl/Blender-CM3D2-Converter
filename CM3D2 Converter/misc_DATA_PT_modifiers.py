@@ -328,7 +328,11 @@ class CNV_OT_forced_modifier_apply(bpy.types.Operator):
                     for index, mod in enumerate(temp_ob.modifiers):
                         if self.is_applies[index].value:
                             try:
-                                bpy.ops.object.modifier_apply(override, modifier=mod.name)
+                                if bpy.app.version[0] < 4:
+                                    bpy.ops.object.modifier_apply(override, modifier=mod.name)
+                                else:
+                                    with context.temp_override(**override):
+                                        bpy.ops.object.modifier_apply(modifier=mod.name)
                             except:
                                 temp_ob.modifiers.remove(mod)
 
@@ -365,9 +369,17 @@ class CNV_OT_forced_modifier_apply(bpy.types.Operator):
                         for before, after in replace_list:
                             mirrored_name = re.sub(before, after, vg.name)
                             if mirrored_name not in ob.vertex_groups:
-                                ob.vertex_groups.new(override, name=mirrored_name)
+                                if bpy.app.version[0] < 4:
+                                    ob.vertex_groups.new(override, name=mirrored_name)
+                                else:
+                                    with context.temp_override(**override):
+                                        ob.vertex_groups.new(name=mirrored_name)
                 try:
-                    bpy.ops.object.modifier_apply(override, modifier=mod.name)
+                    if bpy.app.version[0] < 4:
+                        bpy.ops.object.modifier_apply(override, modifier=mod.name)
+                    else:
+                        with context.temp_override(**override):
+                            bpy.ops.object.modifier_apply(modifier=mod.name)
                 except Exception as e:
                     #ob.modifiers.remove(mod)
                     self.report(type={'ERROR', 'WARNING'}, message=f_tip_("Could not apply '{type}' modifier \"{name}\"", type=mod.type, name=mod.name))
@@ -430,7 +442,11 @@ class CNV_OT_forced_modifier_apply(bpy.types.Operator):
             #    break
             if self.is_applies[index].value and (mod.type == 'ARMATURE' and compat.IS_LEGACY):
                 try:
-                    bpy.ops.object.modifier_apply(override, modifier=mod.name)
+                    if bpy.app.version[0] < 4:
+                        bpy.ops.object.modifier_apply(override, modifier=mod.name)
+                    else:
+                        with context.temp_override(**override):
+                            bpy.ops.object.modifier_apply(modifier=mod.name)
                 except Exception as e:
                     #ob.modifiers.remove(mod)
                     self.report(type={'ERROR', 'WARNING'}, message=f_tip_("Could not apply '{mod_type}' modifier \"{mod_name}\"", mod_type=mod.type, mod_name=mod.name) )

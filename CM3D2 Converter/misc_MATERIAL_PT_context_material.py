@@ -157,43 +157,43 @@ class MATERIAL_PT_cm3d2_properties(bpy.types.Panel):
                 # row = box.split(percentage=0.3)
                 #row = compat.layout_split(box, factor=0.5)
                 row = self.layout.column()
-                row.label(text="CM3D2用", icon_value=common.kiss_icon())
+                row.label(text="For COM3D2", icon_value=common.kiss_icon())
                 sub_row = row.row(align=True)
-                sub_row.operator('material.export_cm3d2_mate', icon='FILE_FOLDER', text="mateへ")
-                sub_row.operator('material.copy_material', icon='COPYDOWN', text="コピー")
-                opr = sub_row.operator('material.paste_material', icon='PASTEDOWN', text="貼付け")
+                sub_row.operator('material.export_cm3d2_mate', icon='FILE_FOLDER', text="to mate")
+                sub_row.operator('material.copy_material', icon='COPYDOWN', text="copy")
+                opr = sub_row.operator('material.paste_material', icon='PASTEDOWN', text="paste")
                 opr.use_dialog = True
                 opr.is_create = False
 
                 shader1 = mate['shader1']
                 shader_prop = cm3d2_data.MaterialHandler.get_shader_prop_dynamic(mate) #cm3d2_data.Handler.get_shader_prop(shader1)
-                type_name = shader_prop.get('type_name', '不明')
+                type_name = shader_prop.get('type_name', 'not clear')
                 icon = shader_prop.get('icon', 'ERROR')
 
                 row = compat.layout_split(box, factor=1 / 3)
-                row.label(text="種類:")
+                row.label(text="kinds:")
                 row.label(text=type_name, icon=icon)
-                box.prop(mate, 'name', icon='SORTALPHA', text="マテリアル名")
-                box.prop(mate, '["shader1"]', icon='MATERIAL', text="シェーダー1")
-                box.prop(mate, '["shader2"]', icon=compat.icon('SHADING_RENDERED'), text="シェーダー2")
+                box.prop(mate, 'name', icon='SORTALPHA', text="material name")
+                box.prop(mate, '["shader1"]', icon='MATERIAL', text="shader 1")
+                box.prop(mate, '["shader2"]', icon=compat.icon('SHADING_RENDERED'), text="shader 2")
 
                 # For LEGACY
                 # box.operator('material.decorate_material', icon=compat.icon('SHADING_TEXTURE'))
                 if 'CM3D2 Texture Expand' not in mate:
-                    box.operator('material.setup_mate_expand', text="フラグセットアップ")
+                    box.operator('material.setup_mate_expand', text="flag setup")
                     return
 
                 box = self.layout.box()
                 if mate['CM3D2 Texture Expand']:
                     if mate.use_nodes is False:
-                        box.operator('material.setup_mate_expand', text="フラグセットアップ")
+                        box.operator('material.setup_mate_expand', text="flag setup")
                         return
 
                     row = box.row()
                     row.alignment = 'LEFT'
                     op = row.operator('wm.context_set_int', icon='DOWNARROW_HLT', text="", emboss=False)
                     op.data_path, op.value, op.relative = 'material["CM3D2 Texture Expand"]', 0, False
-                    row.label(text="マテリアルプロパティ", icon_value=common.kiss_icon())
+                    row.label(text="material properties", icon_value=common.kiss_icon())
 
                     # ノード名はシリアル番号がついていない想定とする
                     tex_list, col_list, f_list = [], [], []

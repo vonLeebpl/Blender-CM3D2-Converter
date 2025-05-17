@@ -124,17 +124,31 @@ class CNV_OT_render_cm3d2_icon(bpy.types.Operator):
             for ob in obs:
                 material_restores.append(common.material_restore(ob))
                 override['object'] = ob
-                bpy.ops.object.material_slot_add(override)
-                if len(ob.material_slots) > 0:
-                    temp_mate = context.blend_data.materials.new("temp")
-                    ob.material_slots[0].material = temp_mate
-                    if compat.IS_LEGACY:
-                        temp_mate.use_shadeless = True
-                        temp_mate.use_face_texture = True
-                        temp_mate.use_transparency = True
-                        temp_mate.alpha = 0.0
-                        temp_mate.use_face_texture_alpha = True
-                    temp_mates.append(temp_mate)
+                if bpy.app.version[0] < 4:
+                    bpy.ops.object.material_slot_add(override)
+                    if len(ob.material_slots) > 0:
+                        temp_mate = context.blend_data.materials.new("temp")
+                        ob.material_slots[0].material = temp_mate
+                        if compat.IS_LEGACY:
+                            temp_mate.use_shadeless = True
+                            temp_mate.use_face_texture = True
+                            temp_mate.use_transparency = True
+                            temp_mate.alpha = 0.0
+                            temp_mate.use_face_texture_alpha = True
+                        temp_mates.append(temp_mate)
+                else:
+                    with context.temp_override(**override):
+                        bpy.ops.object.material_slot_add()
+                        if len(ob.material_slots) > 0:
+                            temp_mate = context.blend_data.materials.new("temp")
+                            ob.material_slots[0].material = temp_mate
+                            if compat.IS_LEGACY:
+                                temp_mate.use_shadeless = True
+                                temp_mate.use_face_texture = True
+                                temp_mate.use_transparency = True
+                                temp_mate.alpha = 0.0
+                                temp_mate.use_face_texture_alpha = True
+                            temp_mates.append(temp_mate)
 
         elif self.mode == 'NOW_MATERIAL':
             if compat.IS_LEGACY:

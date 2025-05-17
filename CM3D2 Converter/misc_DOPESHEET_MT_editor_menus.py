@@ -296,7 +296,11 @@ class CNV_OT_ANIM_convert_to_cm3d2_interpolation(bpy.types.Operator):
         for fcurve_index, fcurve in enumerate(fcurves):
             override = context.copy()
             override['active_editable_fcurve'] = fcurve
-            bpy.ops.fcurve.convert_to_cm3d2_interpolation(override, 'EXEC_REGION_WIN', only_selected=self.only_selected, keep_reports=True)
+            if bpy.app.version[0] < 4:
+                bpy.ops.fcurve.convert_to_cm3d2_interpolation(override, 'EXEC_REGION_WIN', only_selected=self.only_selected, keep_reports=True)
+            else:
+                with context.temp_override(**override):
+                    bpy.ops.fcurve.convert_to_cm3d2_interpolation('EXEC_REGION_WIN', only_selected=self.only_selected, keep_reports=True)
             for kwargs in REPORTS:
                 self.report(**kwargs)
             REPORTS.clear()

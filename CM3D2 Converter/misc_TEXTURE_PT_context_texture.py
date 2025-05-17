@@ -830,7 +830,11 @@ class CNV_OT_quick_export_cm3d2_tex(bpy.types.Operator):
                 version = str(tex_data[0])
                 uv_rects = tex_data[2]
         bpy.types.Scene.MyUVRects = uv_rects
-        bpy.ops.image.export_cm3d2_tex(override, filepath=filepath, path=path, version=version)
+        if bpy.app.version[0] < 4:
+            bpy.ops.image.export_cm3d2_tex(override, filepath=filepath, path=path, version=version)
+        else:
+            with context.temp_override(**override):
+                bpy.ops.image.export_cm3d2_tex(filepath=filepath, path=path, version=version)
 
         self.report(type={'INFO'}, message="同フォルダにtexとして保存しました。" + filepath)
         return {'FINISHED'}

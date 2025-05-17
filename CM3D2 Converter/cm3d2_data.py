@@ -249,7 +249,8 @@ class DataHandler:
         }
         trans_diffuse = {
             'type_name': "リアル 透過",
-            'icon': 'BRUSH_TEXFILL',
+            # 'icon': 'BRUSH_TEXFILL',
+            'icon': 'SHADERFX',
             'shader2': 'Legacy Shaders__Transparent__Diffuse',
             'tex_list': ['_MainTex'],
             'col_list': ['_Color'],

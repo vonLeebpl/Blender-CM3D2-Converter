@@ -422,7 +422,8 @@ class CNV_OT_import_cm3d2_model(bpy.types.Operator, bpy_extras.io_utils.ImportHe
             arm.show_names              = prefs.show_bone_names        
             arm.show_axes               = prefs.show_bone_axes         
             arm.show_bone_custom_shapes = prefs.show_bone_custom_shapes
-            arm.show_group_colors       = prefs.show_bone_group_colors
+            # arm.show_group_colors       = prefs.show_bone_group_colors
+            arm.show_bone_colors       = prefs.show_bone_group_colors  # blender 4.4 fix
             if compat.IS_LEGACY:
                 arm_ob.show_x_ray = prefs.show_bone_in_front
             else:
@@ -689,7 +690,9 @@ class CNV_OT_import_cm3d2_model(bpy.types.Operator, bpy_extras.io_utils.ImportHe
                     else:
                         arm.edit_bones.remove(bone)
 
-            arm.layers[16] = True
+            # arm.layers[16] = True
+            arm.collections.new('COM3D2')   # blender 4.4
+
             compat.set_display_type(arm, prefs.bone_display_type)
             bpy.ops.armature.select_all(action='DESELECT')
             bpy.ops.object.mode_set(mode='OBJECT')
@@ -725,6 +728,7 @@ class CNV_OT_import_cm3d2_model(bpy.types.Operator, bpy_extras.io_utils.ImportHe
             mates_set = set()
             override = context.copy()
             override['object'] = ob
+
             prefs = common.preferences()
             
             for index, data in enumerate(material_data):
@@ -732,7 +736,12 @@ class CNV_OT_import_cm3d2_model(bpy.types.Operator, bpy_extras.io_utils.ImportHe
                 
                 mates_set.add(data.name)
                 #common.preferences().mate_unread_same_value
-                bpy.ops.object.material_slot_add(override)
+                if bpy.app.version[0] < 4:
+                    bpy.ops.object.material_slot_add(override)
+                else:
+                    with context.temp_override(**override):
+                        bpy.ops.object.material_slot_add()
+                
                 mate = context.blend_data.materials.new(data.name)#['name1'])
                 #mate['shader1'] = data['name2']
                 #mate['shader2'] = data['name3']
@@ -750,7 +759,11 @@ class CNV_OT_import_cm3d2_model(bpy.types.Operator, bpy_extras.io_utils.ImportHe
                     common.decorate_material(mate, self.is_decorate, me, index)
                 else:
                     #self.create_mateprop(context, me, texes_set, mate, index, data)
-                    cm3d2_data.MaterialHandler.apply_to(override, mate, data)
+                    if bpy.app.version[0] < 4:
+                        cm3d2_data.MaterialHandler.apply_to(override, mate, data)
+                    else:
+                        with context.temp_override(**override):
+                            cm3d2_data.MaterialHandler.apply_to(override, mate, data)
                     common.decorate_material(mate, self.is_decorate, me, index)
                 common.setup_material(mate)
 
@@ -1028,7 +1041,8 @@ class CNV_OT_import_cm3d2_model(bpy.types.Operator, bpy_extras.io_utils.ImportHe
                 for vert in vertex_data
             )
         )
-        me.use_auto_smooth = True
+        # in blender 4.1 auto smooth is autopmatic
+        # me.use_auto_smooth = True 
 
         return ob, me
 

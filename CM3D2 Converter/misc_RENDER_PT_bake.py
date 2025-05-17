@@ -277,7 +277,11 @@ class CNV_OT_quick_dirty_bake_image(bpy.types.Operator):
 
         override = context.copy()
         override['object'] = temp_ob
-        bpy.ops.paint.vertex_color_dirt(override, blur_strength=self.blur_strength, blur_iterations=self.blur_iterations, clean_angle=self.clean_angle, dirt_angle=self.dirt_angle, dirt_only=self.dirt_only)
+        if bpy.app.version[0] < 4:
+            bpy.ops.paint.vertex_color_dirt(override, blur_strength=self.blur_strength, blur_iterations=self.blur_iterations, clean_angle=self.clean_angle, dirt_angle=self.dirt_angle, dirt_only=self.dirt_only)
+        else:
+            with context.temp_override(**override):
+                bpy.ops.paint.vertex_color_dirt(blur_strength=self.blur_strength, blur_iterations=self.blur_iterations, clean_angle=self.clean_angle, dirt_angle=self.dirt_angle, dirt_only=self.dirt_only)
 
         temp_ob.update_tag(refresh={'OBJECT', 'DATA'})
         context.scene.render.bake_type = 'VERTEX_COLORS'
@@ -371,11 +375,19 @@ class CNV_OT_quick_hemi_bake_image(bpy.types.Operator):
             hide_render_restore = common.hide_render_restore()
         material_restore = common.material_restore(ob)
 
-        bpy.ops.object.material_slot_add(override)
-        temp_mate = context.blend_data.materials.new("quick_hemi_bake_image_temp")
-        ob.material_slots[0].material = temp_mate
-        temp_mate.diffuse_intensity = 1.0
-        temp_mate.diffuse_color = (1, 1, 1)
+        if bpy.app.version[0] < 4:
+            bpy.ops.object.material_slot_add(override)
+            temp_mate = context.blend_data.materials.new("quick_hemi_bake_image_temp")
+            ob.material_slots[0].material = temp_mate
+            temp_mate.diffuse_intensity = 1.0
+            temp_mate.diffuse_color = (1, 1, 1)
+        else:
+            with context.temp_override(**override):
+                bpy.ops.object.material_slot_add()
+                temp_mate = context.blend_data.materials.new("quick_hemi_bake_image_temp")
+                ob.material_slots[0].material = temp_mate
+                temp_mate.diffuse_intensity = 1.0
+                temp_mate.diffuse_color = (1, 1, 1)
 
         temp_lamp = compat.get_lights(context.blend_data).new("quick_hemi_bake_image_temp", 'HEMI')
         temp_ob = context.blend_data.objects.new("quick_hemi_bake_image_temp", temp_lamp)
@@ -473,9 +485,15 @@ class CNV_OT_quick_shadow_bake_image(bpy.types.Operator):
         hide_render_restore = common.hide_render_restore()
         material_restore = common.material_restore(ob)
 
-        bpy.ops.object.material_slot_add(override)
-        temp_mate = context.blend_data.materials.new("quick_shadow_bake_image_temp")
-        ob.material_slots[0].material = temp_mate
+        if bpy.app.version[0] < 4:
+            bpy.ops.object.material_slot_add(override)
+            temp_mate = context.blend_data.materials.new("quick_shadow_bake_image_temp")
+            ob.material_slots[0].material = temp_mate
+        else:
+            with context.temp_override(**override):
+                bpy.ops.object.material_slot_add()
+                temp_mate = context.blend_data.materials.new("quick_shadow_bake_image_temp")
+                ob.material_slots[0].material = temp_mate
 
         lights = compat.get_lights(context.blend_data)
         if self.is_shadow_only:
@@ -593,9 +611,15 @@ class CNV_OT_quick_side_shadow_bake_image(bpy.types.Operator):
         with context.blend_data.libraries.load(blend_path) as (data_from, data_to):
             data_to.materials = ["Side Shadow"]
 
-        bpy.ops.object.material_slot_add(override)
-        temp_mate = data_to.materials[0]
-        ob.material_slots[0].material = temp_mate
+        if bpy.app.version[0] < 4:
+            bpy.ops.object.material_slot_add(override)
+            temp_mate = data_to.materials[0]
+            ob.material_slots[0].material = temp_mate
+        else:
+            with context.temp_override(**override):
+                bpy.ops.object.material_slot_add()
+                temp_mate = data_to.materials[0]
+                ob.material_slots[0].material = temp_mate
 
         temp_lamp = compat.get_lights(context.blend_data).new("quick_side_shadow_bake_image_lamp_temp", 'HEMI')
         temp_lamp_ob = context.blend_data.objects.new("quick_side_shadow_bake_image_lamp_temp", temp_lamp)
@@ -707,20 +731,37 @@ class CNV_OT_quick_gradation_bake_image(bpy.types.Operator):
 
         material_restore = common.material_restore(ob)
 
-        bpy.ops.object.material_slot_add(override)
-        temp_mate = context.blend_data.materials.new("quick_gradation_bake_image_temp")
-        ob.material_slots[0].material = temp_mate
-        temp_slot = temp_mate.texture_slots.create(0)
-        temp_tex = context.blend_data.textures.new("quick_gradation_bake_image_temp", 'BLEND')
-        temp_slot.texture = temp_tex
-        temp_tex.use_color_ramp = True
-        temp_slot.mapping_y = 'Z'
-        temp_slot.mapping_z = 'Y'
-        temp_slot.texture_coords = 'GLOBAL'
-        temp_tex.color_ramp.elements[0].color = (0, 0, 0, 1)
-        temp_tex.use_flip_axis = 'VERTICAL'
-        temp_slot.offset[1] = -me_conter
-        temp_slot.scale[1] = 1 / (me_height / 2)
+        if bpy.app.version[0] < 4:
+            bpy.ops.object.material_slot_add(override)
+            temp_mate = context.blend_data.materials.new("quick_gradation_bake_image_temp")
+            ob.material_slots[0].material = temp_mate
+            temp_slot = temp_mate.texture_slots.create(0)
+            temp_tex = context.blend_data.textures.new("quick_gradation_bake_image_temp", 'BLEND')
+            temp_slot.texture = temp_tex
+            temp_tex.use_color_ramp = True
+            temp_slot.mapping_y = 'Z'
+            temp_slot.mapping_z = 'Y'
+            temp_slot.texture_coords = 'GLOBAL'
+            temp_tex.color_ramp.elements[0].color = (0, 0, 0, 1)
+            temp_tex.use_flip_axis = 'VERTICAL'
+            temp_slot.offset[1] = -me_conter
+            temp_slot.scale[1] = 1 / (me_height / 2)
+        else:
+            with context.temp_override(**override):
+                bpy.ops.object.material_slot_add()
+                temp_mate = context.blend_data.materials.new("quick_gradation_bake_image_temp")
+                ob.material_slots[0].material = temp_mate
+                temp_slot = temp_mate.texture_slots.create(0)
+                temp_tex = context.blend_data.textures.new("quick_gradation_bake_image_temp", 'BLEND')
+                temp_slot.texture = temp_tex
+                temp_tex.use_color_ramp = True
+                temp_slot.mapping_y = 'Z'
+                temp_slot.mapping_z = 'Y'
+                temp_slot.texture_coords = 'GLOBAL'
+                temp_tex.color_ramp.elements[0].color = (0, 0, 0, 1)
+                temp_tex.use_flip_axis = 'VERTICAL'
+                temp_slot.offset[1] = -me_conter
+                temp_slot.scale[1] = 1 / (me_height / 2)
 
         context.scene.render.bake_type = 'TEXTURE'
         context.scene.render.use_bake_selected_to_active = False
@@ -811,12 +852,21 @@ class CNV_OT_quick_metal_bake_image(bpy.types.Operator):
         with context.blend_data.libraries.load(blend_path) as (data_from, data_to):
             data_to.materials = ["Metal"]
 
-        bpy.ops.object.material_slot_add(override)
-        temp_mate = data_to.materials[0]
-        ob.material_slots[0].material = temp_mate
-        temp_mate.diffuse_color = self.mate_color[:]
-        temp_mate.texture_slots[0].diffuse_color_factor = self.environment_strength
-        temp_mate.node_tree.nodes["Mix.001"].inputs[0].default_value = 1.0 - self.highlight_strength
+        if bpy.app.version[0] < 4:
+            bpy.ops.object.material_slot_add(override)
+            temp_mate = data_to.materials[0]
+            ob.material_slots[0].material = temp_mate
+            temp_mate.diffuse_color = self.mate_color[:]
+            temp_mate.texture_slots[0].diffuse_color_factor = self.environment_strength
+            temp_mate.node_tree.nodes["Mix.001"].inputs[0].default_value = 1.0 - self.highlight_strength
+        else:
+            with context.temp_override(**override):
+                bpy.ops.object.material_slot_add()
+                temp_mate = data_to.materials[0]
+                ob.material_slots[0].material = temp_mate
+                temp_mate.diffuse_color = self.mate_color[:]
+                temp_mate.texture_slots[0].diffuse_color_factor = self.environment_strength
+                temp_mate.node_tree.nodes["Mix.001"].inputs[0].default_value = 1.0 - self.highlight_strength
 
         temp_lamp = compat.getlights(context.blend_data).new("quick_metal_bake_image_lamp_temp", 'HEMI')
         temp_lamp_ob = context.blend_data.objects.new("quick_metal_bake_image_lamp_temp", temp_lamp)
@@ -950,12 +1000,21 @@ class CNV_OT_quick_hair_bake_image(bpy.types.Operator):
         with context.blend_data.libraries.load(blend_path) as (data_from, data_to):
             data_to.materials = ["CM3D2 Hair"]
 
-        bpy.ops.object.material_slot_add(override)
-        temp_mate = data_to.materials[0]
-        ob.material_slots[0].material = temp_mate
+        if bpy.app.version[0] < 4:
+            bpy.ops.object.material_slot_add(override)
+            temp_mate = data_to.materials[0]
+            ob.material_slots[0].material = temp_mate
 
-        temp_mate.diffuse_color = self.mate_diffuse_color
-        temp_mate.node_tree.nodes["mate_angel_ring_factor"].inputs[0].default_value = self.mate_angel_ring_factor
+            temp_mate.diffuse_color = self.mate_diffuse_color
+            temp_mate.node_tree.nodes["mate_angel_ring_factor"].inputs[0].default_value = self.mate_angel_ring_factor
+        else:
+            with context.temp_override(**override):
+                bpy.ops.object.material_slot_add()
+                temp_mate = data_to.materials[0]
+                ob.material_slots[0].material = temp_mate
+
+                temp_mate.diffuse_color = self.mate_diffuse_color
+                temp_mate.node_tree.nodes["mate_angel_ring_factor"].inputs[0].default_value = self.mate_angel_ring_factor
 
         context.scene.world.light_settings.use_ambient_occlusion = self.use_ao
         if self.use_ao:
@@ -1066,10 +1125,17 @@ class CNV_OT_quick_uv_border_bake_image(bpy.types.Operator):
 
         material_restore = common.material_restore(ob)
 
-        bpy.ops.object.material_slot_add(override)
-        temp_mate = context.blend_data.materials.new("quick_gradation_bake_image_temp")
-        ob.material_slots[0].material = temp_mate
-        temp_mate.diffuse_color = (1, 1, 1)
+        if bpy.app.version[0] < 4:
+            bpy.ops.object.material_slot_add(override)
+            temp_mate = context.blend_data.materials.new("quick_gradation_bake_image_temp")
+            ob.material_slots[0].material = temp_mate
+            temp_mate.diffuse_color = (1, 1, 1)
+        else:
+            with context.temp_override(**override):
+                bpy.ops.object.material_slot_add(override)
+                temp_mate = context.blend_data.materials.new("quick_gradation_bake_image_temp")
+                ob.material_slots[0].material = temp_mate
+                temp_mate.diffuse_color = (1, 1, 1)
 
         pre_use_bake_clear = context.scene.render.use_bake_clear
         pre_bake_margin = context.scene.render.bake_margin
@@ -1128,7 +1194,11 @@ class CNV_OT_quick_uv_border_bake_image(bpy.types.Operator):
         img_override['edit_image'] = render_img
         img_override['area'] = area
         common.set_area_space_attr(area, 'image', render_img)
-        bpy.ops.image.save_as(img_override, save_as_render=True, copy=True, filepath=temp_png_path, relative_path=False, show_multiview=False, use_multiview=False)
+        if bpy.app.version[0] < 4:
+            bpy.ops.image.save_as(img_override, save_as_render=True, copy=True, filepath=temp_png_path, relative_path=False, show_multiview=False, use_multiview=False)
+        else:
+            with context.temp_override(img_override):
+                bpy.ops.image.save_as(save_as_render=True, copy=True, filepath=temp_png_path, relative_path=False, show_multiview=False, use_multiview=False)
         img.source = 'FILE'
         img.filepath = temp_png_path
         img.reload()
@@ -1703,10 +1773,17 @@ class CNV_OT_quick_semen_bake_image(bpy.types.Operator):
         with context.blend_data.libraries.load(blend_path) as (data_from, data_to):
             data_to.materials = ["精液"]
 
-        bpy.ops.object.material_slot_add(override)
-        temp_mate = data_to.materials[0]
-        ob.material_slots[0].material = temp_mate
-        temp_mate.texture_slots[0].scale = (self.texture_scale, self.texture_scale, self.texture_scale)
+        if bpy.app.version[0] < 4:
+            bpy.ops.object.material_slot_add(override)
+            temp_mate = data_to.materials[0]
+            ob.material_slots[0].material = temp_mate   
+            temp_mate.texture_slots[0].scale = (self.texture_scale, self.texture_scale, self.texture_scale)
+        else:
+            with context.temp_override(**override):
+                bpy.ops.object.material_slot_add()
+                temp_mate = data_to.materials[0]
+                ob.material_slots[0].material = temp_mate
+                temp_mate.texture_slots[0].scale = (self.texture_scale, self.texture_scale, self.texture_scale)
 
         context.scene.render.bake_type = 'TEXTURE'
         context.scene.render.use_bake_selected_to_active = False

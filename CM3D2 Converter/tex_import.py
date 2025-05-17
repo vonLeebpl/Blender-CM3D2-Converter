@@ -8,8 +8,8 @@ from .translations.pgettext_functions import *
 @compat.BlRegister()
 class CNV_OT_import_cm3d2_tex(bpy.types.Operator):
     bl_idname = 'image.import_cm3d2_tex'
-    bl_label = "texファイルを開く"
-    bl_description = "CM3D2で使用されるテクスチャファイル(.tex)を読み込みます"
+    bl_label = "Open tex file"
+    bl_description = "Loads texture files (.tex) used by COM3D2."
     bl_options = {'REGISTER'}
 
     filepath = bpy.props.StringProperty(subtype='FILE_PATH')
@@ -17,10 +17,10 @@ class CNV_OT_import_cm3d2_tex(bpy.types.Operator):
     filter_glob = bpy.props.StringProperty(default="*.tex;*.png", options={'HIDDEN'})
 
     items = [
-        ('PACK', "内部にパックする", "", 'PACKAGE', 1),
-        ('PNG', "PNGに変換してPNGを開く", "", 'IMAGE_DATA', 2),
+        ('PACK', "Pack inside", "", 'PACKAGE', 1),
+        ('PNG', "Convert to PNG and open PNG", "", 'IMAGE_DATA', 2),
     ]
-    mode = bpy.props.EnumProperty(items=items, name="展開方法", default='PNG')
+    mode = bpy.props.EnumProperty(items=items, name="Deployment method", default='PNG')
 
     def invoke(self, context, event):
         prefs = common.preferences()
@@ -34,8 +34,8 @@ class CNV_OT_import_cm3d2_tex(bpy.types.Operator):
     def draw(self, context):
         box = self.layout.box()
         col = box.column(align=True)
-        col.label(text="展開方法", icon='FILESEL')
-        col.prop(self, 'mode', icon='FILESEL', expand=True)
+        col.label(text="Deployment method", icon='FILE')
+        col.prop(self, 'mode', icon='FILE', expand=True)
 
     def execute(self, context):
         common.preferences().tex_import_path = self.filepath

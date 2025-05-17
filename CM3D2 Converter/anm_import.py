@@ -21,27 +21,27 @@ from System import FormatException  # type: ignore
 @compat.BlRegister()
 class CNV_OT_import_cm3d2_anm(bpy.types.Operator):
     bl_idname = 'import_anim.import_cm3d2_anm'
-    bl_label = "CM3D2モーション (.anm)"
-    bl_description = "カスタムメイド3D2のanmファイルを読み込みます"
+    bl_label = "CM3D2 Animation (.anm)"
+    bl_description = "Load the Custom Maid 3D2 anm file."
     bl_options = {'REGISTER'}
 
     filepath = bpy.props.StringProperty(subtype='FILE_PATH')
     filename_ext = ".anm"
     filter_glob = bpy.props.StringProperty(default="*.anm", options={'HIDDEN'})
 
-    scale = bpy.props.FloatProperty(name="倍率", default=5, min=0.1, max=100, soft_min=0.1, soft_max=100, step=100, precision=1, description="インポート時のメッシュ等の拡大率です")
+    scale = bpy.props.FloatProperty(name="Scale", default=5, min=0.1, max=100, soft_min=0.1, soft_max=100, step=100, precision=1, description="インポート時のメッシュ等の拡大率です")
     set_frame_rate = bpy.props.BoolProperty(name="Set Framerate", default=True, description="Change the scene's render settings to 60 fps")                                     
     is_loop = bpy.props.BoolProperty(name="Loop", default=True)
 
     is_anm_data_text = bpy.props.BoolProperty(name="Anm Text (SLOW)", default=False, description="Output Data to a JSON file")
     
-    remove_pre_animation = bpy.props.BoolProperty(name="既にあるアニメーションを削除", default=True)
-    set_frame = bpy.props.BoolProperty(name="フレーム開始・終了位置を調整", default=True)
-    ignore_automatic_bone = bpy.props.BoolProperty(name="Twisterボーンを除外", default=True)
+    remove_pre_animation = bpy.props.BoolProperty(name="Remove existing animation", default=True)
+    set_frame = bpy.props.BoolProperty(name="Adjust frame start and end positions", default=True)
+    ignore_automatic_bone = bpy.props.BoolProperty(name="Exclude Twister bones", default=True)
 
-    is_location = bpy.props.BoolProperty(name="位置", default=True)
-    is_rotation = bpy.props.BoolProperty(name="回転", default=True)
-    is_scale    = bpy.props.BoolProperty(name="拡縮", default=True)
+    is_location = bpy.props.BoolProperty(name="Location", default=True)
+    is_rotation = bpy.props.BoolProperty(name="Rotation", default=True)
+    is_scale    = bpy.props.BoolProperty(name="Scale", default=True)
     is_tangents = bpy.props.BoolProperty(name="Tangents", default=False)
 
     @classmethod
@@ -73,7 +73,7 @@ class CNV_OT_import_cm3d2_anm(bpy.types.Operator):
         box.prop(self, 'ignore_automatic_bone', icon='X')
 
         box = self.layout.box()
-        box.label(text="読み込むアニメーション情報")
+        box.label(text="Animation information to import")
         column = box.column(align=True)
         column.prop(self, 'is_location', icon=compat.icon('CON_LOCLIKE' ))
         column.prop(self, 'is_rotation', icon=compat.icon('CON_ROTLIKE' ))
@@ -88,7 +88,7 @@ class CNV_OT_import_cm3d2_anm(bpy.types.Operator):
         try:
             file = open(self.filepath, 'rb')
         except IOError:
-            self.report(type={'ERROR'}, message=f_tip_("ファイルを開くのに失敗しました、アクセス不可かファイルが存在しません。file={}", self.filepath))
+            self.report(type={'ERROR'}, message=f_tip_("フFailed to open file, inaccessible or file does not exist. file={}", self.filepath))
             return {'CANCELLED'}
 
         action_name = os.path.basename(self.filepath)

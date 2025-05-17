@@ -631,7 +631,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
         # Get Custom Normal Information
         if me.has_custom_normals:
             custom_normals = [mathutils.Vector() for i in range(len(me.vertices))]
-            me.calc_normals_split()
+#            me.calc_normals_split()    deprecated in bl 4.4
             for loop in me.loops:
                 custom_normals[loop.vertex_index] += loop.normal
             for no in custom_normals:
