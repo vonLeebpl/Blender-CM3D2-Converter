@@ -209,9 +209,9 @@ class AddonPreferences(bpy.types.AddonPreferences):
 
     def draw(self, context):
         if compat.IS_LEGACY:
-            self.layout.label(text="ここの設定は「ユーザー設定の保存」ボタンを押すまで保存されていません", icon='QUESTION')
+            self.layout.label(text="The settings here are not saved until you press the 'Save User Settings' button.", icon='QUESTION')
         else:
-            self.layout.label(text="設定値を変更した場合、「プリファレンスを保存」ボタンを押下するか、「プリファレンスを自動保存」を有効にして保存してください", icon='QUESTION')
+            self.layout.label(text="If you change the settings, please click the 'Save Preferences' button or enable 'Auto-save Preferences' to save them.", icon='QUESTION')
         
         col = self.layout.column()
         col.label(text="CM3D2 Converter Info")
@@ -273,7 +273,7 @@ class AddonPreferences(bpy.types.AddonPreferences):
         box.prop(self, 'menu_default_path', icon=brws_icon, text="Initial folder when selecting files")
 
         box = self.layout.box()
-        box.label(text="texファイル検索", icon='BORDERMOVE')
+        box.label(text="tex file search", icon='BORDERMOVE')
         box.prop(self, 'is_replace_cm3d2_tex', icon='VIEWZOOM')
         box.prop(self, 'default_tex_path0', icon='LAYER_ACTIVE', text="その1")
         box.prop(self, 'default_tex_path1', icon='LAYER_ACTIVE', text="その2")
@@ -281,15 +281,15 @@ class AddonPreferences(bpy.types.AddonPreferences):
         box.prop(self, 'default_tex_path3', icon='LAYER_ACTIVE', text="その4")
 
         box = self.layout.box()
-        box.label(text="CM3D2用マテリアル新規作成時の初期値", icon='MATERIAL')
+        box.label(text="Initial values ​​when creating a new material for CM3D2", icon='MATERIAL')
         row = box.row()
         row.prop(self, 'new_mate_tex_offset', icon='MOD_MULTIRES')
         row.prop(self, 'new_mate_tex_scale', icon='ARROW_LEFTRIGHT')
         row = box.row()
-        row.prop(self, 'new_mate_toonramp_name', icon='BRUSH_TEXFILL')
+        row.prop(self, 'new_mate_toonramp_name', icon='MATERIAL')
         row.prop(self, 'new_mate_toonramp_path', icon='ANIM')
         row = box.row()
-        row.prop(self, 'new_mate_shadowratetoon_name', icon='BRUSH_TEXMASK')
+        row.prop(self, 'new_mate_shadowratetoon_name', icon='MATERIAL')
         row.prop(self, 'new_mate_shadowratetoon_path', icon='ANIM')
         row = box.row()
         row.prop(self, 'new_mate_color', icon='COLOR')

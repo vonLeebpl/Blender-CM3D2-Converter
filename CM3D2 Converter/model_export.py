@@ -529,6 +529,10 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
         }
         try:
             with writer:
+                try:
+                    arm_ob
+                except:
+                    arm_ob = None
                 self.write_model(context, ob, writer, arm_ob, **model_datas)
         except common.CM3D2ExportError as e:
             self.report(type={'ERROR'}, message=str(e))
@@ -536,7 +540,7 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
 
         return {'FINISHED'}
 
-    def write_model(self, context, ob: bpy.types.Object, writer, arm_ob, bone_data=[], local_bone_data=[], vertices=[]):
+    def write_model(self, context, ob: bpy.types.Object, writer, arm_ob = None, bone_data=[], local_bone_data=[], vertices=[]):
         """Write model data to a file object"""
         me = ob.data
         prefs = common.preferences()
@@ -719,11 +723,11 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
             finally:
                 print("FINISHED SHAPE KEYS WRITE")
                 pass
-        else:
-            common.write_str(writer, 'end')
+        # else:
+        common.write_str(writer, 'end')
 
         # export skin thickness
-        if self.version_num >= 2100:
+        if self.version_num >= 2100: # and arm_ob != None:
             has_st = arm_ob['has_skin_thickness']
             writer.write(struct.pack('<i', has_st))
             if has_st > 0:
@@ -863,6 +867,9 @@ class CNV_OT_export_cm3d2_model(bpy.types.Operator):
             common.write_str(writer, 'morph')
             common.write_str(writer, name)
             writer.write(struct.pack('<i', len(morph)))
+            # TODO: fix tangents , now it's just temporary fix to not use tangents
+            if self.version_num >= 2102:
+                writer.write(struct.pack('<?', False))
             for v_index, vec, normal in morph:
                 vec    = compat.convert_bl_to_cm_space(vec   )
                 normal = compat.convert_bl_to_cm_space(normal)

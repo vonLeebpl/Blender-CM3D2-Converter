@@ -467,6 +467,8 @@ def get_com3d2_dir():
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\KISS\カスタムオーダーメイド3D2') as key:
             return winreg.QueryValueEx(key, 'InstallPath')[0]
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\KISS\CUSTOM ORDER MAID3D 2') as key:
+            return winreg.QueryValueEx(key, 'InstallPath')[0]
     except:
         return None
 
